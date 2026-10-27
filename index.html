@@ -102,8 +102,7 @@
 
         <div class="form-group">
             <label for="impostoDevido">Qual o valor estimado do seu Imposto Devido? (R$)</label>
-            <!-- Alterado para type="text" e adicionado o evento oninput -->
-            <input type="text" id="impostoDevido" placeholder="Ex: 1.500,00" oninput="formatarMoeda(this)">
+            <input type="text" id="impostoDevido" placeholder="Ex: 35.000,50" oninput="formatarMoedaLivre(this)">
         </div>
 
         <button onclick="calcularDestinacao()">Simular Destinação</button>
@@ -122,35 +121,34 @@
     <script>
         let valorCalculado = 0;
 
-        // Nova função para aplicar a máscara de moeda enquanto a pessoa digita
-        function formatarMoeda(elemento) {
+        function formatarMoedaLivre(elemento) {
             let valor = elemento.value;
             
-            // Remove tudo que não é número
-            valor = valor.replace(/\D/g, "");
-
-            if (valor === "") {
-                elemento.value = "";
-                return;
+            // Remove tudo que não seja número ou vírgula
+            valor = valor.replace(/[^\d,]/g, "");
+            
+            // Garante que exista apenas uma vírgula no campo
+            let partes = valor.split(",");
+            if (partes.length > 2) {
+                valor = partes[0] + "," + partes.slice(1).join("");
+                partes = valor.split(",");
             }
-
-            // Divide por 100 para ter os centavos (ex: 3500050 vira 35000.50)
-            valor = (parseInt(valor, 10) / 100).toFixed(2) + '';
-
-            // Troca o ponto decimal por vírgula
-            valor = valor.replace(".", ",");
-
-            // Adiciona o ponto a cada 3 dígitos na parte dos milhares
-            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-
-            // Atualiza o campo com o valor formatado
-            elemento.value = valor;
+            
+            // Coloca o ponto a cada 3 dígitos na parte inteira (milhares)
+            partes[0] = partes[0].replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+            
+            // Junta as partes e limita as casas decimais a 2 (ex: ,50)
+            if (partes.length > 1) {
+                elemento.value = partes[0] + "," + partes[1].substring(0, 2);
+            } else {
+                elemento.value = partes[0];
+            }
         }
 
         function calcularDestinacao() {
             let inputValor = document.getElementById('impostoDevido').value;
             
-            // Limpa o valor formatado (remove pontos e troca vírgula por ponto) para o JavaScript conseguir calcular
+            // Remove os pontos e converte a vírgula em ponto para a matemática do JavaScript
             inputValor = inputValor.replace(/\./g, "").replace(",", ".");
             const impostoDevido = parseFloat(inputValor);
 
@@ -159,8 +157,10 @@
                 return;
             }
 
+            // Calcula os 6%
             valorCalculado = impostoDevido * 0.06;
 
+            // Formata o resultado na tela
             const valorFormatado = valorCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('valorDestinado').innerText = valorFormatado;
             document.getElementById('areaResultado').style.display = 'block';
