@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora IR Solidário</title>
     <style>
-        /* Estilos básicos para deixar a calculadora bonita e responsiva (funciona bem no celular) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
@@ -46,14 +45,14 @@
             font-weight: bold;
             text-align: left;
         }
-        input[type="number"] {
+        input[type="text"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 16px;
-            box-sizing: border-box; /* Garante que o input não passe da tela */
+            box-sizing: border-box;
         }
         button {
             background-color: #3498db;
@@ -81,7 +80,7 @@
             margin-top: 25px;
             padding-top: 20px;
             border-top: 1px solid #eee;
-            display: none; /* Fica escondido até a pessoa clicar em calcular */
+            display: none; 
         }
         .resultado h2 {
             color: #27ae60;
@@ -99,17 +98,16 @@
     <div class="container">
         <h1>Calculadora IR Solidário 🦁</h1>
         
-        <!-- Alerta inserido após o feedback das entrevistas -->
         <p class="aviso">⚠️ <strong>Atenção:</strong> A destinação sem custos só é possível para quem faz a declaração no <strong>Modelo Completo</strong>.</p>
 
         <div class="form-group">
             <label for="impostoDevido">Qual o valor estimado do seu Imposto Devido? (R$)</label>
-            <input type="number" id="impostoDevido" placeholder="Ex: 1500.00" step="0.01" min="0">
+            <!-- Alterado para type="text" e adicionado o evento oninput -->
+            <input type="text" id="impostoDevido" placeholder="Ex: 1.500,00" oninput="formatarMoeda(this)">
         </div>
 
         <button onclick="calcularDestinacao()">Simular Destinação</button>
 
-        <!-- Área de Resultado e Ação -->
         <div id="areaResultado" class="resultado">
             <p>Você pode destinar para os fundos sociais da cidade até:</p>
             <h2 id="valorDestinado">R$ 0,00</h2>
@@ -122,50 +120,61 @@
     </div>
 
     <script>
-        // Variável global para guardar o valor calculado e usar no WhatsApp
         let valorCalculado = 0;
 
+        // Nova função para aplicar a máscara de moeda enquanto a pessoa digita
+        function formatarMoeda(elemento) {
+            let valor = elemento.value;
+            
+            // Remove tudo que não é número
+            valor = valor.replace(/\D/g, "");
+
+            if (valor === "") {
+                elemento.value = "";
+                return;
+            }
+
+            // Divide por 100 para ter os centavos (ex: 3500050 vira 35000.50)
+            valor = (parseInt(valor, 10) / 100).toFixed(2) + '';
+
+            // Troca o ponto decimal por vírgula
+            valor = valor.replace(".", ",");
+
+            // Adiciona o ponto a cada 3 dígitos na parte dos milhares
+            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+
+            // Atualiza o campo com o valor formatado
+            elemento.value = valor;
+        }
+
         function calcularDestinacao() {
-            // Pega o valor digitado no input
-            const inputValor = document.getElementById('impostoDevido').value;
+            let inputValor = document.getElementById('impostoDevido').value;
+            
+            // Limpa o valor formatado (remove pontos e troca vírgula por ponto) para o JavaScript conseguir calcular
+            inputValor = inputValor.replace(/\./g, "").replace(",", ".");
             const impostoDevido = parseFloat(inputValor);
 
-            // Validação simples para evitar campos vazios ou negativos
             if (isNaN(impostoDevido) || impostoDevido <= 0) {
                 alert("Por favor, insira um valor válido de imposto devido.");
                 return;
             }
 
-            // O limite de destinação é de 6% (0.06)
             valorCalculado = impostoDevido * 0.06;
 
-            // Formata o valor para o padrão moeda brasileiro (R$)
             const valorFormatado = valorCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            // Atualiza o texto na tela
             document.getElementById('valorDestinado').innerText = valorFormatado;
-
-            // Mostra a área de resultado que estava escondida
             document.getElementById('areaResultado').style.display = 'block';
         }
 
         function enviarWhatsApp() {
-            // Formata o valor novamente para incluir na mensagem de texto
             const valorFormatado = valorCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
-            // Texto da mensagem que será enviada
             const mensagem = `Olá! Gostaria de destinar 6% do meu Imposto de Renda para os fundos sociais do nosso município neste ano. Segundo a minha simulação, o valor é de aproximadamente ${valorFormatado}. Como faço a declaração no Modelo Completo, você pode incluir essa destinação para mim? Obrigado!`;
-            
-            // Cria o link da API do WhatsApp Web/App com o texto codificado
             const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
-            
-            // Abre o WhatsApp em uma nova aba
             window.open(url, '_blank');
-			
+
 			//OBSERVAÇÃO: Documentação realizada pelo GEMINI IA
         }
     </script>
 
 </body>
 </html>
-
